@@ -1,0 +1,71 @@
+/* for index page */
+        body {
+            background-image: url('/Login/img/red.jpg');
+            background-size: cover;
+            height: 100vh;
+            font-family: 'Amiri', serif;
+        }
+        .welcome-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+        }
+        .navbar {
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .btn-custom {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 18px;
+            min-width: 200px;
+        }
+        .btn-admin {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-student {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-admin:hover {
+            background-color: #c82333;
+            border-color: #bd2130;
+        }
+        .btn-student:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        .creator-credit {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+             
+        }
+        .creator-credit a {
+            color: #007bff;
+            text-decoration: none;
+             
+        }
+        .creator-credit a:hover {
+            text-decoration: underline;
+             
+        }
+  

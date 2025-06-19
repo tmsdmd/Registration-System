@@ -1,0 +1,152 @@
+/* ==== الأساسيات ==== */
+body {
+    font-family: 'Amiri', serif; /* نوع الخط */
+    background-color: #f8f9fa;   /* لون الخلفية الرمادي الفاتح */
+    margin: 0;                   /* إزالة الهوامش الخارجية */
+}
+
+/* ==== الشريط العلوي ==== */
+.navbar {
+    background-color: #007bff; /* لون الشريط العلوي أزرق */
+}
+
+.navbar-brand, .nav-link {
+    color: #ffffff !important; /* لون النص داخل الشريط العلوي أبيض */
+}
+
+/* ==== الشريط الجانبي ==== */
+.sidebar {
+    height: 100vh; /* ارتفاع الشريط بطول الشاشة بالكامل */
+    width: 220px; /* عرض الشريط الجانبي */
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: #343a40; /* خلفية رمادية داكنة */
+    color: white;
+    padding-top: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.5); /* ظل خفيف */
+}
+
+.sidebar h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #ffffff;
+}
+
+.sidebar a {
+    color: #ffffff;
+    padding: 15px 20px;
+    display: block;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background-color: #007bff; /* زر أزرق عند التمرير */
+    color: white;
+}
+
+/* ==== المحتوى الرئيسي ==== */
+main, .content {
+    margin-left: 250px; /* لترك فراغ للشريط الجانبي */
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+/* ==== معلومات إضافية ==== */
+.info {
+    background-color: #e9ecef; /* خلفية رمادية ناعمة */
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+/* ==== بطاقات ==== */
+.card {
+    transition: transform 0.3s;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px); /* ارتفاع بسيط عند المرور */
+}
+
+/* ==== رسالة ترحيبية أو تنبيه ==== */
+.welcome-box {
+    background: linear-gradient(135deg, #007bff, #00bfff); /* تدرج لوني أزرق */
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* ==== الجدول ==== */
+.table {
+    background-color: white;
+    width: 100%;
+    border-collapse: collapse; /* دمج الحدود */
+}
+
+.table th {
+    background-color: #343a40; /* رأس الجدول بلون الشريط الجانبي */
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+.table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #dee2e6; /* خطوط فاصلة ناعمة */
+}
+
+/* ==== الشارات ==== */
+.badge-completed {
+    background-color: #28a745; /* أخضر */
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: white;
+    display: inline-block;
+}
+
+/* ==== المجموع ==== */
+.total-hours {
+    font-weight: bold;
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+/* ==== استجابة الشاشات الصغيرة ==== */
+@media screen and (max-width: 768px) {
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        box-shadow: none;
+        padding: 10px 0;
+    }
+
+    main, .content {
+        margin-left: 0;
+        padding: 15px;
+    }
+  .download-link {
+            display: inline-block;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .download-link:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+  
+    
