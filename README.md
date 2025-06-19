@@ -28,7 +28,7 @@
 
 1. استنسخ المشروع:
    ```bash
-   git clone https://github.com/username/cs-course-registration-system.git
+   git clone https://github.com/username/cs-course-registration-system-Arabic.git
    ```
 2. أنشئ قاعدة البيانات واستورد الجداول من ملف `database`.
 3. حدّث بيانات الاتصال بقاعدة البيانات في ملف `db.php`.
@@ -51,6 +51,22 @@
 ## الرخصة
 
 هذا المشروع مجاني ومفتوح المصدر للاستخدام الأكاديمي.
+
+---
+
+# نظام تسجيل المقررات للطلاب
+
+هذا المشروع هو مشروع تخرج خاص بقسم الحاسوب يهدف إلى إدارة وتسجيل مقررات الطلاب بطريقة إلكترونية.
+
+> **تنويه:**  
+> المشروع تعليمي فقط ولا يحتوي على أي بيانات حقيقية أو معلومات خاصة بأشخاص حقيقيين.
+
+---
+
+**إعداد:**  
+طالب/ـة في قسم الحاسوب  
+كلية/جامعة: [جامعة طرابلس](https://uot.edu.ly/)  
+تحت إشراف: adamsaad179@gmail.com
 
 ---
 
@@ -83,7 +99,7 @@ This system enables Computer Science students to register for courses online and
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/username/cs-course-registration-system.git
+   git clone https://github.com/username/cs-course-registration-system-Arabic.git
    ```
 2. Create the database and import tables from the `database` directory.
 3. Update your database credentials in `db.php`.
@@ -106,3 +122,5 @@ To contribute, please fork the repository and submit a pull request with your ch
 ## License
 
 This project is free and open source for academic use.
+
+---
