@@ -1,4 +1,4 @@
-<?php
+    <?php
 session_start();
 include 'db.php';
 error_reporting(E_ALL);
@@ -9,189 +9,68 @@ if (!isset($_SESSION['username'])) {
     exit();
 }
 
-// إضافة مقرر جديد
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_course'])) {
-    $course_id = htmlspecialchars($_POST['course_id']);
-    $course_name = htmlspecialchars($_POST['course_name']);
-    $status = htmlspecialchars($_POST['status']);
-    $units = (int)$_POST['units'];
-    $requirements = htmlspecialchars($_POST['requirements']);
+// جلب جميع الطلاب
+$students = $conn->query("SELECT id, name FROM students")->fetch_all(MYSQLI_ASSOC);
 
-    $checkStmt = $conn->prepare("SELECT COUNT(*) FROM courses WHERE id = ?");
-    $checkStmt->bind_param("s", $course_id);
-    $checkStmt->execute();
-    $checkStmt->bind_result($count);
-    $checkStmt->fetch();
-    $checkStmt->close();
+// جلب جميع المقررات
+$courses = $conn->query("SELECT id, name, units FROM courses")->fetch_all(MYSQLI_ASSOC);
 
-    if ($count > 0) {
-        echo "<div class='alert alert-danger'>هذا المعرف موجود بالفعل!</div>";
+// معالجة إضافة مقرر منجز
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_completed_course'])) {
+    $student_id = $_POST['student_id'];
+    $course_id = $_POST['course_id'];
+    
+    // التحقق من وجود المقرر للطالب
+    $check_stmt = $conn->prepare("SELECT id FROM student_courses WHERE student_id = ? AND course_id = ?");
+    $check_stmt->bind_param("ss", $student_id, $course_id);
+    $check_stmt->execute();
+    $existing_record = $check_stmt->get_result()->fetch_assoc();
+    $check_stmt->close();
+
+    if ($existing_record) {
+        // تحديث حالة المقرر
+        $update_stmt = $conn->prepare("UPDATE student_courses SET completed = 1 WHERE student_id = ? AND course_id = ?");
+        $update_stmt->bind_param("ss", $student_id, $course_id);
+        $update_stmt->execute();
+        $update_stmt->close();
     } else {
-        $stmt = $conn->prepare("INSERT INTO courses (id, name, status, units) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("sssi", $course_id, $course_name, $status, $units);
-        if ($stmt->execute()) {
-            if (!empty($requirements)) {
-                $reqs = explode(',', $requirements);
-                foreach ($reqs as $req) {
-                    $req = trim($req);
-                    if ($req != '') {
-                        $reqStmt = $conn->prepare("INSERT INTO Requirements (course_id, Requirements_id) VALUES (?, ?)");
-                        $reqStmt->bind_param("ss", $course_id, $req);
-                        $reqStmt->execute();
-                        $reqStmt->close();
-                    }
-                }
-            }
-            echo "<div class='alert alert-success'>تم إضافة المقرر بنجاح!</div>";
-        } else {
-            echo "<div class='alert alert-danger'>حدث خطأ أثناء إضافة المقرر: " . $stmt->error . "</div>";
-        }
-        $stmt->close();
+        // إضافة مقرر جديد كمنجز
+        $insert_stmt = $conn->prepare("INSERT INTO student_courses (student_id, course_id, completed) VALUES (?, ?, 1)");
+        $insert_stmt->bind_param("ss", $student_id, $course_id);
+        $insert_stmt->execute();
+        $insert_stmt->close();
     }
 }
 
-// تعديل مقرر
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_course'])) {
-    $course_id = htmlspecialchars($_POST['course_id']);
-    $course_name = htmlspecialchars($_POST['course_name']);
-    $status = htmlspecialchars($_POST['status']);
-    $units = (int)$_POST['units'];
-    $requirements = htmlspecialchars($_POST['requirements']);
+// معالجة اختيار الطالب
+$selected_student = null;
+$completed_courses = [];
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['student_id'])) {
+    $student_id = $_POST['student_id'];
 
-    $updateStmt = $conn->prepare("UPDATE courses SET name = ?, status = ?, units = ? WHERE id = ?");
-    $updateStmt->bind_param("ssis", $course_name, $status, $units, $course_id);
-    if ($updateStmt->execute()) {
-        $deleteReqStmt = $conn->prepare("DELETE FROM Requirements WHERE course_id = ?");
-        $deleteReqStmt->bind_param("s", $course_id);
-        $deleteReqStmt->execute();
-        $deleteReqStmt->close();
-        if (!empty($requirements)) {
-            $reqs = explode(',', $requirements);
-            foreach ($reqs as $req) {
-                $req = trim($req);
-                if ($req != '') {
-                    $reqStmt = $conn->prepare("INSERT INTO Requirements (course_id, Requirements_id) VALUES (?, ?)");
-                    $reqStmt->bind_param("ss", $course_id, $req);
-                    $reqStmt->execute();
-                    $reqStmt->close();
-                }
-            }
-        }
-        echo "<div class='alert alert-success'>تم تعديل المقرر بنجاح!</div>";
-    } else {
-        echo "<div class='alert alert-danger'>حدث خطأ أثناء تعديل المقرر: " . $updateStmt->error . "</div>";
-    }
-    $updateStmt->close();
-}
+    // جلب معلومات الطالب
+    $stmt = $conn->prepare("SELECT * FROM students WHERE id = ?");
+    $stmt->bind_param("s", $student_id);
+    $stmt->execute();
+    $selected_student = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
 
-// عمليات جماعية (حذف/فتح/إغلاق)
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bulk_action'])) {
-    if (!empty($_POST['selected_courses'])) {
-        $selected_courses = $_POST['selected_courses'];
-        $success_count = 0;
-        if ($_POST['bulk_action'] == 'delete') {
-            foreach ($selected_courses as $course_id) {
-                $course_id = htmlspecialchars($course_id, ENT_QUOTES, 'UTF-8');
-                $deleteRequirementsStmt = $conn->prepare("DELETE FROM Requirements WHERE course_id = ?");
-                $deleteRequirementsStmt->bind_param("s", $course_id);
-                $deleteRequirementsStmt->execute();
-                $deleteRequirementsStmt->close();
-                $deleteScheduleStmt = $conn->prepare("DELETE FROM course_schedule WHERE course_id = ?");
-                $deleteScheduleStmt->bind_param("s", $course_id);
-                $deleteScheduleStmt->execute();
-                $deleteScheduleStmt->close();
-                $deleteStmt = $conn->prepare("DELETE FROM courses WHERE id = ?");
-                $deleteStmt->bind_param("s", $course_id);
-                if ($deleteStmt->execute()) $success_count++;
-                $deleteStmt->close();
-            }
-            echo "<div class='alert alert-success'>تم حذف $success_count من " . count($selected_courses) . " مقررات بنجاح!</div>";
-        } elseif ($_POST['bulk_action'] == 'open' || $_POST['bulk_action'] == 'close') {
-            $new_status = $_POST['bulk_action'] == 'open' ? 'open' : 'closed';
-            foreach ($selected_courses as $course_id) {
-                $course_id = htmlspecialchars($course_id, ENT_QUOTES, 'UTF-8');
-                $updateStmt = $conn->prepare("UPDATE courses SET status = ? WHERE id = ?");
-                $updateStmt->bind_param("ss", $new_status, $course_id);
-                if ($updateStmt->execute()) $success_count++;
-                $updateStmt->close();
-            }
-            $status_text = $new_status == 'open' ? 'فتح' : 'إغلاق';
-            echo "<div class='alert alert-success'>تم $status_text $success_count من " . count($selected_courses) . " مقررات بنجاح!</div>";
-        }
-    } else {
-        echo "<div class='alert alert-warning'>لم يتم تحديد أي مقررات!</div>";
-    }
-}
-
-// فتح/إغلاق كل المقررات
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_all_status'])) {
-    $new_status = $_POST['change_all_status'] == 'open_all' ? 'open' : 'closed';
-    $updateAllStmt = $conn->prepare("UPDATE courses SET status = ?");
-    $updateAllStmt->bind_param("s", $new_status);
-    if ($updateAllStmt->execute()) {
-        $status_text = $new_status == 'open' ? 'فتح' : 'إغلاق';
-        echo "<div class='alert alert-success'>تم $status_text جميع المقررات بنجاح!</div>";
-    } else {
-        echo "<div class='alert alert-danger'>حدث خطأ أثناء تحديث حالة المقررات!</div>";
-    }
-    $updateAllStmt->close();
-}
-
-// فتح/إغلاق مقرر فردي
-if (isset($_GET['toggle_status'])) {
-    $course_id = htmlspecialchars($_GET['toggle_status'], ENT_QUOTES, 'UTF-8');
-    $current_status = htmlspecialchars($_GET['current_status'], ENT_QUOTES, 'UTF-8');
-    $new_status = $current_status == 'open' ? 'closed' : 'open';
-    $toggleStmt = $conn->prepare("UPDATE courses SET status = ? WHERE id = ?");
-    $toggleStmt->bind_param("ss", $new_status, $course_id);
-    if ($toggleStmt->execute()) {
-        $status_text = $new_status == 'open' ? 'فتح' : 'إغلاق';
-        echo "<div class='alert alert-success'>تم $status_text المقرر بنجاح!</div>";
-    } else {
-        echo "<div class='alert alert-danger'>حدث خطأ أثناء تغيير حالة المقرر!</div>";
-    }
-    $toggleStmt->close();
-}
-
-// حذف مقرر فردي
-if (isset($_GET['delete'])) {
-    $id = htmlspecialchars($_GET['delete'], ENT_QUOTES, 'UTF-8');
-    $deleteRequirementsStmt = $conn->prepare("DELETE FROM Requirements WHERE course_id = ?");
-    $deleteRequirementsStmt->bind_param("s", $id);
-    $deleteRequirementsStmt->execute();
-    $deleteRequirementsStmt->close();
-    $deleteScheduleStmt = $conn->prepare("DELETE FROM course_schedule WHERE course_id = ?");
-    $deleteScheduleStmt->bind_param("s", $id);
-    $deleteScheduleStmt->execute();
-    $deleteScheduleStmt->close();
-    $stmt = $conn->prepare("DELETE FROM courses WHERE id = ?");
-    $stmt->bind_param("s", $id);
-    if ($stmt->execute()) {
-        echo "<div class='alert alert-success'>تم حذف المقرر بنجاح!</div>";
-    } else {
-        echo "<div class='alert alert-danger'>حدث خطأ أثناء حذف المقرر: " . htmlspecialchars($stmt->error) . "</div>";
-    }
+    // جلب المقررات المنجزة
+    $query = "SELECT c.id, c.name, c.units, sc.completed FROM student_courses sc JOIN courses c ON sc.course_id = c.id WHERE sc.student_id = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("s", $student_id);
+    $stmt->execute();
+    $completed_courses = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     $stmt->close();
 }
-
-$order_by = isset($_GET['order_by']) ? $_GET['order_by'] : 'id';
-$order_dir = isset($_GET['order_dir']) ? $_GET['order_dir'] : 'ASC';
-$valid_order_columns = ['id', 'name', 'status', 'units'];
-$order_by = in_array($order_by, $valid_order_columns) ? $order_by : 'id';
-$order_dir = $order_dir == 'DESC' ? 'DESC' : 'ASC';
-
-// جلب المقررات مع متطلباتها (مجمعة)
-$result = $conn->query("SELECT c.*, GROUP_CONCAT(r.Requirements_id) as Requirements_ids FROM courses c LEFT JOIN Requirements r ON c.id = r.course_id GROUP BY c.id ORDER BY $order_by $order_dir");
-$courses = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="ar">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>قائمة المقررات</title>
-    <link rel="stylesheet" href="/Login/assets/css/bootstrap.min.css">
+    <title>المقررات المنجزة</title>
+       <link rel="stylesheet" href="/Login/assets/css/bootstrap.min.css">
 <link rel="stylesheet" href="/Login/assets/css/all.min.css">
 <link rel="stylesheet" href="/Login/assets/css/select2.min.css">
     <link rel="stylesheet" href="/Login/CSS/styles.css">
@@ -200,185 +79,95 @@ $courses = $result->fetch_all(MYSQLI_ASSOC);
     <div class="sidebar">
         <h3>نظام تسجيل المقررات</h3>
         <ul class="nav flex-column">
-            <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="fas fa-home"></i> الرئيسية</a></li>
-            <li class="nav-item"><a class="nav-link active" href="add_course.php"><i class="fas fa-book"></i> قائمة المقررات</a></li>
-            <li class="nav-item"><a class="nav-link" href="schedule_course.php"><i class="fas fa-calendar-alt"></i> جدول المقررات</a></li>
-            <li class="nav-item"><a class="nav-link" href="add_student.php"><i class="fas fa-users"></i> إضافة طالب</a></li>
-            <li class="nav-item"><a class="nav-link" href="add_admin.php"><i class="fas fa-user-shield"></i> إضافة مسؤول</a></li>
-            <li class="nav-item"><a class="nav-link" href="edit_student.php"><i class="fas fa-check-circle"></i> المقررات المنجزة</a></li>
+            <li class="nav-item">
+                <a class="nav-link" href="dashboard.php"><i class="fas fa-home"></i> الرئيسية</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="add_course.php"><i class="fas fa-book"></i> قائمة المقررات</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="schedule_course.php"><i class="fas fa-calendar-alt"></i> جدول المقررات</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="add_student.php"><i class="fas fa-users"></i> إضافة طالب</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="add_admin.php"><i class="fas fa-user-shield"></i> إضافة مسؤول</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="edit_student.php"><i class="fas fa-check-circle"></i> المقررات المنجزة</a>
+            </li>
         </ul>
     </div>
-    <div class="content" dir="rtl">
-        <!-- Add Course Form -->
-        <div class="card mb-4">
-            <div class="card-header"><i class="fas fa-plus-circle ml-2"></i> إضافة مقرر جديد</div>
-            <div class="card-body">
-                <form method="POST" action="">
-                    <div class="form-row">
-                        <div class="form-group col-md-3">
-                            <label for="course_id">رمز المقرر</label>
-                            <input type="text" class="form-control" id="course_id" name="course_id" maxlength="5" required>
-                        </div>
-                        <div class="form-group col-md-3">
-                            <label for="course_name">اسم المقرر</label>
-                            <input type="text" class="form-control" id="course_name" name="course_name" required>
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label for="status">الحالة</label>
-                            <select class="form-control" id="status" name="status" required>
-                                <option value="open">مفتوح</option>
-                                <option value="closed">مغلق</option>
+
+    <div class="content">
+        <h2>عرض وإضافة المقررات المنجزة للطالب</h2>
+        
+        <!-- نموذج اختيار الطالب -->
+        <form method="POST" action="" class="mb-4">
+            <label for="student_id">اختر الطالب:</label>
+            <select name="student_id" class="form-control mb-3" required>
+                <option value="">-- اختر طالب --</option>
+                <?php foreach ($students as $student): ?>
+                    <option value="<?= $student['id'] ?>" <?= (isset($_POST['student_id']) && $_POST['student_id'] == $student['id']) ? 'selected' : '' ?>>
+                        <?= $student['name'] ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <button type="submit" class="btn btn-primary">عرض</button>
+        </form>
+
+        <?php if ($selected_student): ?>
+            <!-- نموذج إضافة مقرر منجز -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>إضافة مقرر منجز</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <input type="hidden" name="student_id" value="<?= $selected_student['id'] ?>">
+                        <div class="form-group">
+                            <label for="course_id">اختر المقرر:</label>
+                            <select name="course_id" class="form-control" required>
+                                <option value="">-- اختر مقرر --</option>
+                                <?php foreach ($courses as $course): ?>
+                                    <option value="<?= $course['id'] ?>"><?= $course['name'] ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="form-group col-md-2">
-                            <label for="units">الوحدات</label>
-                            <input type="number" class="form-control" id="units" name="units" required min="1">
-                        </div>
-                        <div class="form-group col-md-2">
-                            <label for="requirements">المتطلبات</label>
-                            <input type="text" class="form-control" id="requirements" name="requirements" placeholder="رمز المقرر، فاصلة للفصل">
-                        </div>
-                    </div>
-                    <button type="submit" name="add_course" class="btn btn-primary"><i class="fas fa-save ml-2"></i> حفظ</button>
-                </form>
-            </div>
-        </div>
-        <!-- Bulk Actions -->
-        <form method="POST" action="" class="mb-3" id="bulkForm">
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <select name="bulk_action" class="form-control">
-                        <option value="">اختر إجراء جماعي...</option>
-                        <option value="delete">حذف المحدد</option>
-                        <option value="open">فتح المحدد</option>
-                        <option value="close">إغلاق المحدد</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-play ml-2"></i> تنفيذ</button>
-                </div>
-                <div class="col-md-6 text-left">
-                    <button type="submit" name="change_all_status" value="open_all" class="btn btn-success"><i class="fas fa-lock-open ml-2"></i> فتح الكل</button>
-                    <button type="submit" name="change_all_status" value="close_all" class="btn btn-warning"><i class="fas fa-lock ml-2"></i> إغلاق الكل</button>
-                    <a href="?order_by=name&order_dir=<?= $order_dir == 'ASC' ? 'DESC' : 'ASC' ?>" class="btn btn-outline-secondary"><i class="fas fa-sort-alpha-down ml-2"></i> ترتيب حسب الاسم</a>
-                    <a href="?order_by=id&order_dir=<?= $order_dir == 'ASC' ? 'DESC' : 'ASC' ?>" class="btn btn-outline-secondary"><i class="fas fa-sort-numeric-down ml-2"></i> ترتيب حسب الرمز</a>
+                        <button type="submit" name="add_completed_course" class="btn btn-success">إضافة مقرر منجز</button>
+                    </form>
                 </div>
             </div>
-            <!-- جدول المقررات -->
-            <table class="table table-striped table-hover">
-                <thead class="thead-dark">
+
+            <!-- عرض المقررات المنجزة -->
+            <h3>المقررات المنجزة للطالب: <?= htmlspecialchars($selected_student['name']) ?></h3>
+            <table class="table table-bordered mt-3">
+                <thead>
                     <tr>
-                        <th width="40"><input type="checkbox" id="selectAll"></th>
-                        <th>#</th>
-                        <th>رمز</th>
+                        <th>رمز المقرر</th>
                         <th>اسم المقرر</th>
+                        <th>الوحدات</th>
                         <th>الحالة</th>
-                        <th>المتطلبات</th>
-                        <th>إجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($courses as $index => $course): ?>
-                    <?php
-                        $js_id = json_encode($course['id']);
-                        $js_name = json_encode($course['name']);
-                        $js_status = json_encode($course['status']);
-                        $js_units = json_encode($course['units']);
-                        $js_reqs = json_encode($course['Requirements_ids']);
-                    ?>
-                    <tr>
-                        <td><input type="checkbox" name="selected_courses[]" value="<?= htmlspecialchars($course['id']) ?>"></td>
-                        <td><?= $index + 1 ?></td>
-                        <td><?= htmlspecialchars($course['id']) ?></td>
-                        <td><?= htmlspecialchars($course['name']) ?></td>
-                        <td>
-                            <span class="badge badge-<?= $course['status'] == 'open' ? 'success' : 'danger' ?>">
-                                <?= $course['status'] == 'open' ? 'مفتوح' : 'مغلق' ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?= $course['Requirements_ids'] ? htmlspecialchars($course['Requirements_ids']) : 'لا يوجد' ?>
-                        </td>
-                        <td>
-                            <a href="?delete=<?= htmlspecialchars($course['id']) ?>" class="btn btn-danger btn-sm" onclick="return confirm('هل أنت متأكد؟');"><i class="fas fa-trash-alt"></i></a>
-                            <button type="button" class="btn btn-warning btn-sm"
-                                onclick="openEditModal(<?= $js_id ?>, <?= $js_name ?>, <?= $js_status ?>, <?= $js_units ?>, <?= $js_reqs ?>)">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <a href="?toggle_status=<?= htmlspecialchars($course['id']) ?>&current_status=<?= $course['status'] ?>" class="btn btn-<?= $course['status'] == 'open' ? 'danger' : 'success' ?> btn-sm">
-                                <i class="fas fa-<?= $course['status'] == 'open' ? 'lock' : 'lock-open' ?>"></i>
-                            </a>
-                        </td>
-                    </tr>
+                    <?php foreach ($completed_courses as $course): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($course['id']) ?></td>
+                            <td><?= htmlspecialchars($course['name']) ?></td>
+                            <td><?= htmlspecialchars($course['units']) ?></td>
+                            <td><?= $course['completed'] ? 'مكتمل' : 'غير مكتمل' ?></td>
+                        </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-        </form>
-
-        <!-- Modal نافذة التعديل -->
-        <div class="modal fade" id="editCourseModal" tabindex="-1" aria-labelledby="editCourseLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <form method="POST" action="" class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editCourseLabel">تعديل مقرر</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="إغلاق">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="course_id" id="modal_course_id">
-                        <div class="form-group">
-                            <label>اسم المقرر</label>
-                            <input type="text" class="form-control" name="course_name" id="modal_course_name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>الحالة</label>
-                            <select class="form-control" name="status" id="modal_status" required>
-                                <option value="open">مفتوح</option>
-                                <option value="closed">مغلق</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>الوحدات</label>
-                            <input type="number" class="form-control" name="units" id="modal_units" required min="1">
-                        </div>
-                        <div class="form-group">
-                            <label>المتطلبات</label>
-                            <input type="text" class="form-control" name="requirements" id="modal_requirements">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" name="edit_course" class="btn btn-success">تحديث</button>
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">إلغاء</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <?php endif; ?>
     </div>
-    
-<!-- JS -->
+      <!-- JS -->
 <script src="/Login/assets/js/jquery-3.5.1.min.js"></script>
 <script src="/Login/assets/js/popper.min.js"></script>
 <script src="/Login/assets/js/bootstrap.min.js"></script>
 <script src="/Login/assets/js/select2.min.js"></script>
-    
-    
-    <script>
-    function openEditModal(id, name, status, units, requirements) {
-        document.getElementById('modal_course_id').value = id;
-        document.getElementById('modal_course_name').value = name;
-        document.getElementById('modal_status').value = status;
-        document.getElementById('modal_units').value = units;
-        document.getElementById('modal_requirements').value = requirements;
-        $('#editCourseModal').modal('show');
-    }
-    $(function () {
-        // تحديد الكل
-        $('#selectAll').on('change', function() {
-            $('input[name="selected_courses[]"]').prop('checked', this.checked);
-        });
-    });
-    </script>
 </body>
-</html>
-<?php $conn->close(); ?>
+</html
