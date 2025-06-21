@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Jun 19, 2025 at 03:37 PM
+-- Generation Time: Jun 21, 2025 at 01:25 PM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -152,7 +152,7 @@ INSERT INTO `course_schedule` (`id`, `course_id`, `day`, `time`) VALUES
 (47, 'CS111', 'الخميس', '16:00:00'),
 (51, 'AR216', 'الأحد', '12:00:00'),
 (54, 'AR100', 'السبت', '08:00:00'),
-(55, 'MM111', 'الاثنين', '10:00:00');
+(61, 'MM112', 'الاثنين', '08:00:00');
 
 -- --------------------------------------------------------
 
@@ -250,7 +250,7 @@ CREATE TABLE `student_courses` (
   `id` int(11) NOT NULL,
   `student_id` int(10) NOT NULL,
   `course_id` varchar(5) NOT NULL,
-  `day` varchar(10) NOT NULL,
+  `day` varchar(10) DEFAULT NULL,
   `time` time DEFAULT NULL,
   `completed` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -264,8 +264,8 @@ INSERT INTO `student_courses` (`id`, `student_id`, `course_id`, `day`, `time`, `
 (25, 22007702, 'MM111', 'الخميس', '14:00:00', 1),
 (61, 22007701, 'CS110', '2025-06-17', NULL, 1),
 (62, 22007701, 'CS111', '2025-06-17', NULL, 1),
-(73, 22007701, 'MM111', 'الاثنين', '10:00:00', 0),
-(76, 22007701, 'AR100', 'السبت', '08:00:00', 0);
+(73, 22007701, 'MM111', 'الاثنين', '10:00:00', 1),
+(79, 22007701, 'MM112', 'الاثنين', '08:00:00', 0);
 
 --
 -- Indexes for dumped tables
@@ -346,7 +346,7 @@ ALTER TABLE `classes`
 -- AUTO_INCREMENT for table `course_schedule`
 --
 ALTER TABLE `course_schedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- AUTO_INCREMENT for table `student_classes`
@@ -358,7 +358,7 @@ ALTER TABLE `student_classes`
 -- AUTO_INCREMENT for table `student_courses`
 --
 ALTER TABLE `student_courses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=80;
 
 --
 -- Constraints for dumped tables
