@@ -1,4 +1,4 @@
-# cs-course-registration-system-Arabic
+# Registration-System
 # نظام تسجيل مقررات قسم الحاسوب
 
 > **ملاحظة:** هذا النظام مخصص للغة العربية وواجهة الاستخدام بالكامل باللغة العربية.
@@ -28,7 +28,7 @@
 
 1. استنسخ المشروع:
    ```bash
-   git clone https://github.com/username/cs-course-registration-system-Arabic.git
+   git clone https://github.com/username/Registration-System.git
    ```
 2. أنشئ قاعدة البيانات واستورد الجداول من ملف `database`.
 3. حدّث بيانات الاتصال بقاعدة البيانات في ملف `db.php`.
@@ -93,7 +93,7 @@ This system enables Computer Science students to register for courses online and
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/username/cs-course-registration-system-Arabic.git
+   git clone https://github.com/username/Registration-System.git
    ```
 2. Create the database and import tables from the `database` directory.
 3. Update your database credentials in `db.php`.
