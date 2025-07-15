@@ -61,10 +61,6 @@ This project is licensed under the MIT License. See the [LICENSE](./LICENSE) fil
 
 ---
 
-**إعداد:**  
-تسنيم آدم، طالبة في قسم الحاسوب  
-كلية/جامعة: [جامعة طرابلس](https://uot.edu.ly/)  
-تحت إشراف: adamsaad179@gmail.com
 
 ---
 
@@ -119,10 +115,7 @@ This system enables Computer Science students to register for courses online and
 
 To contribute, please fork the repository and submit a pull request with your changes.
 
-**Author:**  
-Tasneem Adam, Computer Science Student  
-Faculty/University: [University of Tripoli](https://uot.edu.ly/)  
-Supervisor: adamsaad179@gmail.com
+
 
 ## License
 
